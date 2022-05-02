@@ -8,15 +8,17 @@ from parse_dtb_file import DtbPreTmpFile
 from varname import varname
 
 
-class Parse(object):
+class BuiltOutParser(object):
     c_set = set()
     h_set = set()
     other_set = set()
     wildcard_set = set()
+    out_path = ""
+    source_path = ""
 
     def __init__(self, path):
         self.out_path = path
-        self.source_path = os.path.realpath(path + "/source")
+        self.source_path = os.path.realpath(path + os.sep + "source")
 
     def init(self):
         for root, dirs, files in os.walk(self.out_path):
@@ -26,17 +28,17 @@ class Parse(object):
                     self.parse_cmd_file(filepath.strip())
 
     def dtb_pre_parse(self):
-        for root, dirs, files in os.walk(self.out_path + "/" + "arch/"):
+        for root, dirs, files in os.walk(self.out_path + os.sep + "arch"):
             for f in files:
                 filepath = os.path.join(root, f)
                 if filepath.endswith(".d.pre.tmp"):
                     self.parse_dtb_tmp_file(filepath.strip())
 
     def __handle_path(self, x):
-        if x.startswith('/'):
+        if x.startswith(os.sep):
             xpath = x.strip()
         else:
-            xpath = self.out_path + "/" + x.strip()
+            xpath = self.out_path + os.sep + x.strip()
 
         return xpath
 
@@ -58,16 +60,15 @@ class Parse(object):
                 print("line=" + xpath)
 
     def parse_deps(self, deps, path):
-        ## xx = deps.split("\\")
         xx = deps
         for x in xx:
             y = x.strip()
             if y.startswith("$(wildcard"):
                 self.wildcard_set.add(y)
-            elif y.startswith('/'):
+            elif y.startswith(os.sep):
                 self.__add_to_set(self.h_set, self.other_set, y)
             else:
-                xpath = self.out_path + "/" + y
+                xpath = self.out_path + os.sep + y
                 if os.path.exists(xpath):
                     # self.h_set.add(xpath)
                     self.__add_to_set(self.h_set, self.other_set, xpath)
@@ -123,7 +124,7 @@ if __name__ == "__main__":
     else:
         path = os.path.realpath(sys.argv[1])
 
-    xx = Parse(path)
+    xx = BuiltOutParser(path)
     ##xx = Parse("/data/work/nxp/u-boot/uout")
     # xx.parse_cmd_file("/data/work/nxp/u-boot/uout/common/.fdt_support.o.cmd")
     # xx.dump()
