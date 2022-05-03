@@ -13,7 +13,8 @@ class DtbPreTmpFile(object):
                     pass
                 else:
                     tmp = xx.split(":")[1].strip().split("\\")
-                    for t in tmp:
+                    for tt in tmp:
+                        t = tt.strip()
                         if t.endswith(".h") or t.endswith(".c") or t.endswith(".dtsi") or t.endswith(".dts"):
                             self.deps.add(t)
 

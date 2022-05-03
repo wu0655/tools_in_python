@@ -5,7 +5,7 @@ import sys
 
 from parse_cmd_file import CmdDescFile
 from parse_dtb_file import DtbPreTmpFile
-from varname import varname
+from utils import varname
 
 
 class Parse(object):

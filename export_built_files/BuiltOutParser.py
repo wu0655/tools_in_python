@@ -5,7 +5,7 @@ import sys
 
 from parse_cmd_file import CmdDescFile
 from parse_dtb_file import DtbPreTmpFile
-from varname import varname
+from utils import varname
 
 
 class BuiltOutParser(object):
@@ -15,9 +15,8 @@ class BuiltOutParser(object):
     wildcard_set = set()
     out_path = ""
     source_path = ""
-
     def __init__(self, path):
-        self.out_path = path
+        self.out_path = os.path.realpath(path)
         self.source_path = os.path.realpath(path + os.sep + "source")
 
     def init(self):
@@ -42,8 +41,9 @@ class BuiltOutParser(object):
 
         return xpath
 
-    def __add_to_set(self, src_set, other_set, path):
-        if os.path.realpath(path).startswith(self.source_path):
+    def __add_to_set(self, src_set, other_set, in_path):
+        path = os.path.realpath(in_path)
+        if path.startswith(self.source_path) or path.startswith(self.out_path):
             src_set.add(path)
         else:
             other_set.add(path)
@@ -63,6 +63,8 @@ class BuiltOutParser(object):
         xx = deps
         for x in xx:
             y = x.strip()
+            if len(y) == 0:
+                continue
             if y.startswith("$(wildcard"):
                 self.wildcard_set.add(y)
             elif y.startswith(os.sep):
@@ -77,6 +79,7 @@ class BuiltOutParser(object):
                     print("line=" + xpath)
 
     def parse_cmd_file(self, path):
+        pass
         desc = CmdDescFile(path)
         if len(desc.deps) > 0:
             self.parse_deps(desc.deps, path)
@@ -102,31 +105,23 @@ class BuiltOutParser(object):
         for x in self.wildcard_set:
             print(x)
 
-    def __flush_to_file(self, set, name):
+    @staticmethod
+    def flush_to_file(in_set, name):
         fn = open(name, 'w')
-        for x in set:
+        for x in in_set:
             fn.write(x + '\n')
         fn.close()
 
     def output(self):
-        self.__flush_to_file(sorted(self.c_set), "c_set.txt")
-        self.__flush_to_file(sorted(self.h_set), "h_set.txt")
-        self.__flush_to_file(sorted(self.other_set), "other_set.txt")
-        self.__flush_to_file(sorted(self.wildcard_set), "wildcard_set.txt")
+        self.flush_to_file(sorted(self.c_set), "c_set.txt")
+        self.flush_to_file(sorted(self.h_set), "h_set.txt")
+        self.flush_to_file(sorted(self.other_set), "other_set.txt")
+        self.flush_to_file(sorted(self.wildcard_set), "wildcard_set.txt")
 
 
 if __name__ == "__main__":
-    print('input=' + str(sys.argv))
-
-    if not os.path.exists(sys.argv[1]):
-        print("input parameter error")
-        sys.exit()
-    else:
-        path = os.path.realpath(sys.argv[1])
-
-    xx = BuiltOutParser(path)
-    ##xx = Parse("/data/work/nxp/u-boot/uout")
-    # xx.parse_cmd_file("/data/work/nxp/u-boot/uout/common/.fdt_support.o.cmd")
+    xx = BuiltOutParser("/data/work/nxp/manual/uout")
+    #xx.parse_cmd_file("/data/work/nxp/u-boot/uout/common/.fdt_support.o.cmd")
     # xx.dump()
     xx.init()
     xx.dtb_pre_parse()
