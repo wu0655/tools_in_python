@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-class ObjDepsFile(object):
+class CmdDescFile(object):
     source = set()
     deps = set()
 
@@ -9,13 +9,11 @@ class ObjDepsFile(object):
             xx = ""
             for line in f.readlines():
                 x = line.strip()
+                xx += x
                 if x.endswith("\\"):
-                    xx += x
-                    continue
-                elif len(xx) > 0:
-                    # last line of "\"
+                    # xx=xx[0:-1]
                     pass
-
+                else:
                     if xx.startswith("source_"):
                         self.source = xx.split(":=")[1].strip().split(" ")
                     if xx.startswith("deps_"):
@@ -24,7 +22,7 @@ class ObjDepsFile(object):
 
 
 if __name__ == "__main__":
-    xx = ObjDepsFile("/data/work/nxp/u-boot/uout/./net/.nfs.o.cmd")
+    xx = CmdDescFile("/data/work/nxp/u-boot/uout/./net/.nfs.o.cmd")
     print(xx.source)
     print("")
     print(xx.deps)

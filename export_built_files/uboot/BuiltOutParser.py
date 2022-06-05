@@ -15,6 +15,7 @@ class BuiltOutParser(object):
     wildcard_set = set()
     out_path = ""
     source_path = ""
+
     def __init__(self, path):
         self.out_path = os.path.realpath(path)
         self.source_path = os.path.realpath(path + os.sep + "source")
@@ -26,12 +27,22 @@ class BuiltOutParser(object):
                 if filepath.endswith(".o.cmd"):
                     self.parse_cmd_file(filepath.strip())
 
+    def dtb_get_dts(self, n):
+        # .fsl-s32g274aevb.dtb.d.pre.tmp
+        name = n.split(".")[1] + ".dts"
+        path = self.source_path + "/arch/arm/dts/" + name
+        if not os.path.exists(path):
+            print("file is not exist. path=" + path)
+        else:
+            self.h_set.add(path)
+
     def dtb_pre_parse(self):
         for root, dirs, files in os.walk(self.out_path + os.sep + "arch"):
             for f in files:
                 filepath = os.path.join(root, f)
                 if filepath.endswith(".d.pre.tmp"):
                     self.parse_dtb_tmp_file(filepath.strip())
+                    self.dtb_get_dts(f)
 
     def __handle_path(self, x):
         if x.startswith(os.sep):
@@ -56,27 +67,36 @@ class BuiltOutParser(object):
             if os.path.exists(xpath):
                 self.__add_to_set(self.c_set, self.other_set, xpath)
             else:
-                print("file=" + path)
+                print("parse_source file=" + path)
                 print("line=" + xpath)
 
     def parse_deps(self, deps, path):
         xx = deps
         for x in xx:
-            y = x.strip()
-            if len(y) == 0:
+            # handle $(wildcard xxx)
+            # TODO multi-file in one file.
+            yy = x.strip()
+            if yy.startswith("$(wildcard"):
+                self.wildcard_set.add(yy)
                 continue
-            if y.startswith("$(wildcard"):
-                self.wildcard_set.add(y)
-            elif y.startswith(os.sep):
-                self.__add_to_set(self.h_set, self.other_set, y)
-            else:
-                xpath = self.out_path + os.sep + y
-                if os.path.exists(xpath):
-                    # self.h_set.add(xpath)
-                    self.__add_to_set(self.h_set, self.other_set, xpath)
+
+            # multi file in one, so split first
+            y0 = yy.split(" ")
+            for y1 in y0:
+                y = y1.strip()
+                if len(y) == 0:
+                    continue
+
+                elif y.startswith(os.sep):
+                    self.__add_to_set(self.h_set, self.other_set, y)
                 else:
-                    print("file=" + path)
-                    print("line=" + xpath)
+                    xpath = self.out_path + os.sep + y
+                    if os.path.exists(xpath):
+                        # self.h_set.add(xpath)
+                        self.__add_to_set(self.h_set, self.other_set, xpath)
+                    else:
+                        print("parse_deps file=" + path)
+                        print("line=" + xpath)
 
     def parse_cmd_file(self, path):
         pass
@@ -120,9 +140,16 @@ class BuiltOutParser(object):
 
 
 if __name__ == "__main__":
-    xx = BuiltOutParser("/data/work/nxp/manual/uout")
-    #xx.parse_cmd_file("/data/work/nxp/u-boot/uout/common/.fdt_support.o.cmd")
-    # xx.dump()
-    xx.init()
-    xx.dtb_pre_parse()
-    xx.output()
+    print('input=' + str(sys.argv))
+    print('input=' + os.sep)
+
+    if not os.path.exists(sys.argv[1]):
+        print("input parameter error")
+        sys.exit()
+    else:
+        path = os.path.realpath(sys.argv[1])
+    parse = BuiltOutParser(path)
+    # parse = BuiltOutParser("/data/work/nxp/manual/uout")
+    parse.init()
+    parse.dtb_pre_parse()
+    parse.output()
